@@ -152,14 +152,26 @@ public class Quiz {
     }
 
     public static class Question {
-        public String prompt;
-        public String answer;
-        public String options;
+        private String prompt;
+        private String answer;
+        private String options;
 
         public Question(String prompt, String answer, String options) {
             this.prompt = prompt;
             this.answer = answer;
             this.options = options;
+        }
+
+        public String getPrompt() {
+            return prompt;
+        }
+
+        public String getAnswer() {
+            return answer;
+        }
+
+        public String getOptions() {
+            return options;
         }
     }
 }

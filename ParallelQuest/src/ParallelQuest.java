@@ -1,9 +1,7 @@
 package ParallelQuest.src;
 import java.util.*;
 import java.util.concurrent.*;
-
-import ParallelQuest.src.Quiz.Question;
-
+import java.io.*;
 // Cores para console
 class Colors {
     public static final String RESET = "\u001B[0m";
@@ -15,17 +13,27 @@ class Colors {
 
 public class ParallelQuest {
     private static Scanner sc = new Scanner(System.in);
-    private static int score = 0;
+    private static int sessionScore = 0; // Pontuação da sessão atual
+    private static String currentPlayer;
+    private static Scoreboard scoreboard;
 
     public static void main(String[] args) throws Exception {
+        scoreboard = new Scoreboard();
+        
+        System.out.println(Colors.AZUL + "Bem-vindo ao Parallel Quest!" + Colors.RESET);
+        System.out.print("Por favor, digite seu nome de jogador: ");
+        currentPlayer = sc.nextLine();
+
         while (true) {
             System.out.println("\n" + Colors.AZUL + "=== Parallel Quest ===" + Colors.RESET);
+            System.out.println("Jogador: " + Colors.AMARELO + currentPlayer + Colors.RESET);
             System.out.println("1. Nível 1 - Soma em Paralelo");
             System.out.println("2. Nível 2 - Race Condition");
             System.out.println("3. Nível 3 - Quiz Educativo");
             System.out.println("4. Mini Desafio - Soma personalizada");
-            System.out.println("5. Ver Pontuação");
-            System.out.println("6. Sair");
+            System.out.println("5. Ver Pontuação da Sessão");
+            System.out.println("6. Ver Scoreboard Geral");
+            System.out.println("7. Sair e Salvar");
             System.out.print("Escolha: ");
             int opc = sc.nextInt();
             switch (opc) {
@@ -33,8 +41,13 @@ public class ParallelQuest {
                 case 2: nivel2(); break;
                 case 3: nivel3(); break;
                 case 4: miniDesafio(); break;
-                case 5: System.out.println("Pontuação atual: " + score); break;
-                case 6: System.out.println("Saindo..."); return;
+                case 5: System.out.println("Pontuação da sessão atual: " + sessionScore); break;
+                case 6: scoreboard.display(); break;
+                case 7: 
+                    scoreboard.updateScore(currentPlayer, sessionScore);
+                    scoreboard.save();
+                    System.out.println("Pontuação salva! Obrigado por jogar!\nSaindo..."); 
+                    return;
                 default: System.out.println("Opção inválida."); break;
             }
         }
@@ -74,7 +87,7 @@ public class ParallelQuest {
 
         long total = Arrays.stream(partialSums).sum();
         System.out.println(Colors.VERDE + "Soma total do array: " + total + Colors.RESET);
-        score += 50;
+        sessionScore += 50;
         System.out.println("💡 Demonstra divisão de tarefas e paralelismo de dados.");
     }
 
@@ -106,10 +119,10 @@ public class ParallelQuest {
         System.out.println("Valor final do contador: " + counter.value);
         System.out.println("Esperado: " + expected);
         if (counter.value == expected) {
-            System.out.println(Colors.VERDE + "✔ Sem race condition! +50 pontos" + Colors.RESET);
-            score += 50;
+            System.out.println(Colors.VERDE + "Sem race condition! +50 pontos" + Colors.RESET);
+            sessionScore += 50;
         } else {
-            System.out.println(Colors.VERMELHO + "✖ Race condition ocorreu!" + Colors.RESET);
+            System.out.println(Colors.VERMELHO + "Race condition ocorreu!" + Colors.RESET);
         }
     }
 
@@ -125,23 +138,25 @@ public class ParallelQuest {
 
     Quiz quiz = new Quiz();
     List<Quiz.Question> questions = quiz.getQuestions();
+    int quizScore = 0;
 
     for (Quiz.Question q : questions) {
-        System.out.println("\n" + q.prompt);
-        System.out.println(q.options);
+        System.out.println("\n" + q.getPrompt());
+        System.out.println(q.getOptions());
         System.out.print("Resposta: ");
         String answer = sc.nextLine().trim().toLowerCase();
-        if (answer.equals(q.answer)) {
-            System.out.println(Colors.VERDE + "✔ Correto!" + Colors.RESET);
-            score += 10;
+        if (answer.equals(q.getAnswer())) {
+            System.out.println(Colors.VERDE + "Correto!" + Colors.RESET);
+            quizScore += 10; // Pontos por acerto
         } else {
-            System.out.println(Colors.VERMELHO + "✖ Errado! Resposta correta: " + q.answer + Colors.RESET);
+            System.out.println(Colors.VERMELHO + "Errado! Resposta correta: " + q.getAnswer() + Colors.RESET);
         }
     }
-    System.out.println("Pontuação final do quiz: " + score);
+    sessionScore += quizScore;
+    System.out.println("\nPontuação do quiz: " + quizScore + "/" + (questions.size() * 10));
 }
 
-
+    // Classe Question duplicada removida para usar a de Quiz.java
     static class Question {
         String prompt;
         String answer;
@@ -185,7 +200,60 @@ public class ParallelQuest {
 
         long total = Arrays.stream(partialSums).sum();
         System.out.println(Colors.VERDE + "Soma total do array: " + total + Colors.RESET);
-        score += 50;
+        sessionScore += 25; // Pontuação do mini desafio
         System.out.println("💡 Demonstra paralelismo de dados aplicado a um array personalizado.");
+    }
+
+    // ===================== Scoreboard =====================
+    static class Scoreboard {
+        private static final String FILENAME = "scoreboard.dat";
+        private Map<String, Integer> scores;
+
+        @SuppressWarnings("unchecked")
+        Scoreboard() {
+            File file = new File(FILENAME);
+            if (file.exists()) {
+                try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+                    scores = (Map<String, Integer>) ois.readObject();
+                } catch (IOException | ClassNotFoundException e) {
+                    System.err.println("Erro ao carregar scoreboard. Um novo será criado.");
+                    scores = new HashMap<>();
+                }
+            } else {
+                scores = new HashMap<>();
+            }
+        }
+
+        public void updateScore(String playerName, int sessionScore) {
+            // Adiciona a pontuação da sessão à pontuação total do jogador
+            scores.put(playerName, scores.getOrDefault(playerName, 0) + sessionScore);
+        }
+
+        public void save() {
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILENAME))) {
+                oos.writeObject(scores);
+            } catch (IOException e) {
+                System.err.println("Erro ao salvar scoreboard: " + e.getMessage());
+            }
+        }
+
+        public void display() {
+            System.out.println("\n" + Colors.AZUL + "--- Scoreboard Geral ---" + Colors.RESET);
+            if (scores.isEmpty()) {
+                System.out.println("Nenhuma pontuação registrada ainda.");
+                return;
+            }
+
+            // Cria uma lista a partir do mapa para poder ordená-la
+            List<Map.Entry<String, Integer>> sortedScores = new ArrayList<>(scores.entrySet());
+            // Ordena em ordem decrescente de pontuação
+            sortedScores.sort(Map.Entry.comparingByValue(Comparator.reverseOrder()));
+
+            int rank = 1;
+            for (Map.Entry<String, Integer> entry : sortedScores) {
+                System.out.printf("%d. %s: %d pontos\n", rank++, entry.getKey(), entry.getValue());
+            }
+            System.out.println(Colors.AZUL + "------------------------" + Colors.RESET);
+        }
     }
 }
