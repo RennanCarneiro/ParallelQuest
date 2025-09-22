@@ -34,6 +34,7 @@ O jogo possui **três níveis principais** e um **Mini Desafio opcional** para p
 ├── src/ # Código-fonte
 │ ├── ParallelQuest.java # Classe principal
 │ └── Quiz.java # Classe do quiz
+│ └── scoreboard.dat # Scoreboard salvo no computador local
 └── README.md # Documentação do projeto
 ```
 ---
