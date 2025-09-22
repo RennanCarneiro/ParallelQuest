@@ -33,7 +33,8 @@ public class ParallelQuest {
             System.out.println("4. Mini Desafio - Soma personalizada");
             System.out.println("5. Ver Pontuação da Sessão");
             System.out.println("6. Ver Scoreboard Geral");
-            System.out.println("7. Sair e Salvar");
+            System.out.println("7. Limpar Scoreboard");
+            System.out.println("8. Sair e Salvar");
             System.out.print("Escolha: ");
             int opc = sc.nextInt();
             switch (opc) {
@@ -43,7 +44,17 @@ public class ParallelQuest {
                 case 4: miniDesafio(); break;
                 case 5: System.out.println("Pontuação da sessão atual: " + sessionScore); break;
                 case 6: scoreboard.display(); break;
-                case 7: 
+                case 7:
+                    System.out.print("Tem certeza que deseja limpar todo o scoreboard? (s/n): ");
+                    char confirm = sc.next().toLowerCase().charAt(0);
+                    if (confirm == 's') {
+                        scoreboard.clear();
+                        System.out.println(Colors.VERDE + "Scoreboard foi limpo com sucesso!" + Colors.RESET);
+                    } else {
+                        System.out.println("Operação cancelada.");
+                    }
+                    break;
+                case 8: 
                     scoreboard.updateScore(currentPlayer, sessionScore);
                     scoreboard.save();
                     System.out.println("Pontuação salva! Obrigado por jogar!\nSaindo..."); 
@@ -227,6 +238,11 @@ public class ParallelQuest {
         public void updateScore(String playerName, int sessionScore) {
             // Adiciona a pontuação da sessão à pontuação total do jogador
             scores.put(playerName, scores.getOrDefault(playerName, 0) + sessionScore);
+        }
+
+        public void clear() {
+            scores.clear();
+            save(); // Salva o scoreboard vazio para persistir a limpeza
         }
 
         public void save() {
